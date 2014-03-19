@@ -501,6 +501,35 @@ describe Redis::Lock do
     # lock value should still be set since the lock was held for more than the expiry
     REDIS_HANDLE.get("test_lock").should.not.be.nil
   end
+
+  it "should let lock be gettable with zero timeout" do
+    lock = Redis::Lock.new(:test_lock, :timeout => 0)
+    gotit = false
+    lock.lock do
+      gotit = true
+    end
+
+    # should get the lock because it has expired
+    gotit.should.be.true
+    REDIS_HANDLE.get("test_lock").should.be.nil
+  end
+
+  it "should let lock be gettable with zero timeout if lock is held past expiration" do
+    expiry = 15
+    lock = Redis::Lock.new(:test_lock, :expiration => expiry, :timeout => 0)
+
+    # create a fake lock in the past
+    REDIS_HANDLE.set("test_lock", Time.now-(expiry + 60))
+
+    gotit = false
+    lock.lock do
+      gotit = true
+    end
+
+    # should get the lock because it has expired
+    gotit.should.be.true
+    REDIS_HANDLE.get("test_lock").should.be.nil
+  end
 end
 
 

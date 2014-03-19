@@ -33,7 +33,7 @@ class Redis
       start = Time.now
       gotit = false
       expiration = nil
-      while Time.now - start < @options[:timeout]
+      begin
         expiration = generate_expiration
         # Use the expiration as the value of the lock.
         gotit = redis.setnx(key, expiration)
@@ -61,7 +61,7 @@ class Redis
         end
 
         sleep 0.1
-      end
+      end while Time.now - start < @options[:timeout]
       raise LockTimeout, "Timeout on lock #{key} exceeded #{@options[:timeout]} sec" unless gotit
       begin
         yield
